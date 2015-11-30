@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(kursach_1)
-set(SOURCE src/main.cpp)
+set(SOURCE src/main.cpp src/logic.cpp)
 set(CMAKE_C_FLAGS "-ggdb")
 add_executable(kursach_1 ${SOURCE})
 include_directories(/usr/local/lib)

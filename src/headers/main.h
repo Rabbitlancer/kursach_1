@@ -10,3 +10,4 @@ extern int is_complete();
 extern int loop();
 extern int wait();
 
+extern struct cell *map_objects;

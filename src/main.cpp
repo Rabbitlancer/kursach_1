@@ -8,7 +8,8 @@
 using namespace std;
 
 void finalize() {
-	endwin();
+	if (k_renderer == CONSOLE) endwin();
+	//free(map_objects);
 }
 
 int main(int argc, char *argv[]) {
@@ -47,6 +48,15 @@ choose:
 		loop();
 		wait();
 	}
+
+	finalize();
+
+choose2:
+	cout<<endl<<endl<<"Game over! Try again? (y/n) ";
+	cin>>choice;
+	cout<<endl;
+	if (choice!='y' && choice!='n') goto choose2;
+	if (choice == 'y') goto choose;
 
 	return 0;
 }

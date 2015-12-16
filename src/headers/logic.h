@@ -27,6 +27,7 @@ int wait();
 static double rand_range(double max);
 static int repool();
 static int push_object(t_object type, unsigned int x, unsigned int y);
+static int push_object(t_object type, unsigned int x, unsigned int y, t_dir dir);
 static void pool_update();
 
 extern int render_init();

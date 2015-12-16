@@ -17,6 +17,42 @@ static double rand_range(double max) {
 	return res;
 }
 
+static void fly(int id) {
+	struct shot *info = (struct shot *)map_objects[id].content;
+	int newx = map_objects[id].x, newy = map_objects[id].y;
+
+	switch (info->dir) {
+		case UP: --newy; break;
+		case DOWN: ++newy; break;
+		case LEFT: --newx; break;
+		case RIGHT: ++newx; break;
+	}
+
+	bool colflag = false;
+	for (int i = 0; i<map_count; ++i) {
+		if (colflag) break;
+		if (map_objects[i].type == FENCE
+			|| (map_objects[i].type == TANK && !info->friendly)
+			|| (map_objects[i].type == ENEMY && info->friendly)) {
+			if (map_objects[i].x == newx && map_objects[i].y == newy) {
+				colflag = true;
+				map_objects[id].type = EMPTY;
+				if (map_objects[i].type == FENCE) map_objects[i].type = EMPTY;
+				else if (rand_range(10)-(((struct tank *)(map_objects[i].content))->ac))
+					--(((struct tank *)(map_objects[i].content))->hp);
+			}
+		}
+	}
+
+	if (map_objects[id].x == newx && map_objects[id].y == newy) map_objects[id].type = EMPTY;
+
+	if (!colflag) {
+		map_objects[id].x = newx;
+		map_objects[id].y = newy;
+		if (newx<0 || newy<0 || newx>=FIELD_WIDTH || newy>=FIELD_HEIGHT) map_objects[id].type = EMPTY;
+	}
+}
+
 static void drive(t_dir dir, int id) {
 	int newx = map_objects[id].x, newy = map_objects[id].y;
 
@@ -32,6 +68,11 @@ static void drive(t_dir dir, int id) {
 		if (colflag) break;
 		if (map_objects[i].type == WALL || map_objects[i].type == FENCE) {
 			if (map_objects[i].x == newx && map_objects[i].y == newy) colflag = true;
+		} else if (map_objects[i].type == PICKUP && id==0) {
+			if (map_objects[i].x == newx && map_objects[i].y == newy) {
+				map_objects[i].type = EMPTY;
+				player.hp++;
+			}
 		}
 	}
 
@@ -72,6 +113,61 @@ int generate_map() {
 		}
 		if (push_object(PICKUP, x+2+(int)rand_range(4), y+2+(int)rand_range(4))<0) return -1;
 	}
+
+	int enemies = 4+(int)rand_range(10);
+	for (int i = 0; i<enemies; ++i) {
+		x = 6+(int)rand_range(FIELD_WIDTH-12);
+		y = 6+(int)rand_range(FIELD_HEIGHT-12);
+		if (push_object(ENEMY, x, y)<0) return -1;
+	}
+
+	int fences = 20+(int)rand_range(80);
+	for (int i = 0; i<fences; ++i) {
+		x = 1+(int)rand_range(FIELD_WIDTH-2);
+		y = 1+(int)rand_range(FIELD_HEIGHT-2);
+		if (push_object(FENCE, x, y)<0) return -1;
+	}
+}
+
+t_dir choose_dir() {
+	if (rand_range(100)-75>0) return UP;
+	if (rand_range(100)-67>0) return DOWN;
+	if (rand_range(100)-50>0) return LEFT;
+	return RIGHT;
+}
+
+t_dir opposite_dir(t_dir org) {
+	if (org == UP) return DOWN;
+	if (org == DOWN) return UP;
+	if (org == LEFT) return RIGHT;
+	if (org == RIGHT) return LEFT;
+}
+
+void ai(int id) {
+	struct tank *info = (struct tank *)(map_objects[id].content);
+
+	if (info->hp<=0) map_objects[id].type = EMPTY;
+
+	if (info->ai_state == UNKNOWN) {
+		info->dir = choose_dir();
+
+		if (rand_range(100)-50>0) info->ai_state = DRIVE;
+		else info->ai_state = SHOOT;
+
+	} else if (info->ai_state == DRIVE) {
+		if (rand_range(100)-10>0) {
+			drive(info->dir, id);
+			if (rand_range(100)-70>0) info->dir = choose_dir();
+		} else info->ai_state = SHOOT;
+
+	} else if (info->ai_state == SHOOT) {
+		push_object(ESHOT, map_objects[id].x, map_objects[id].y, info->dir);
+		info->ai_state = RETREAT;
+
+	} else {
+		info->dir = opposite_dir(info->dir);
+		info->ai_state = DRIVE;
+	}
 }
 
 int init() {
@@ -91,7 +187,7 @@ int init() {
 	if (render_init()) return 1;
 
 	//generate a random map
-	generate_map();
+	if (generate_map()<0) return 1;
 
 	//ncurses init
 	initscr();
@@ -124,9 +220,11 @@ int wait() {
 		case 's': drive(DOWN, 0); break;
 		case 'd': drive(RIGHT, 0); break;
 		case 'a': drive(LEFT, 0); break;
+		case ' ': push_object(FSHOT, map_objects[0].x, map_objects[0].y, player.dir); break;
 		case 'o': exit(0); break;
 	}
 	pool_update();
+	if (player.hp<1) state = DONE;
 	while (clock() - t < TIME_THRESHOLD) {
 		; //waiting...
 	}
@@ -148,6 +246,31 @@ static int push_object(t_object type, unsigned int x, unsigned int y) {
 	++map_count;
 	map_objects[map_count-1].type = type;
 	if (type == TANK) map_objects[map_count-1].content = (void*)&player;
+	if (type == ENEMY) {
+		struct tank *en = new tank;
+		en->hp = 1+(int)rand_range(5);
+		en->ac = 1+(int)rand_range(5);
+		en->dir = UP;
+		en->ai_state = UNKNOWN;
+		map_objects[map_count-1].content = (void*)en;
+	}
+
+	map_objects[map_count-1].x = x;
+	map_objects[map_count-1].y = y;
+}
+
+//a special overload for bullets
+static int push_object(t_object type, unsigned int x, unsigned int y, t_dir dir) {
+	if (map_pool - map_count < 5)
+		if (repool() < 0) return -1;
+
+	++map_count;
+	map_objects[map_count-1].type = type;
+	struct shot *ne = new shot;
+	ne->dir = dir;
+	ne->friendly = (type == FSHOT);
+	map_objects[map_count-1].content = (void*)ne;
+
 	map_objects[map_count-1].x = x;
 	map_objects[map_count-1].y = y;
 }
@@ -173,9 +296,10 @@ static void pool_update() {
 					case LEFT: tspr = 'C'; break;
 					case RIGHT: tspr = 'D'; break;
 				}
+				ai(i);
 			break;
 			case FSHOT:
-			case ESHOT: tspr = '*'; break;
+			case ESHOT: tspr = '*'; fly(i); break;
 			case FENCE: tspr = 'H'; break;
 			case PICKUP: tspr = '$'; break;
 			default: tspr = ' '; break;

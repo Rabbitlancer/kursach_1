@@ -27,8 +27,10 @@ int render_update() {
 		for (int i = 0; i<FIELD_HEIGHT; ++i)
 			for (int j = 0; j<FIELD_WIDTH; ++j)
 				rfield[i][j] = ' ';
-		for (int i = 0; i<map_count; ++i) {
-			rfield[map_objects[i].y][map_objects[i].x] = map_objects[i].sprite;
+		for (int i = map_count-1; i>=0; --i) {
+			if (map_objects[i].x>=0 && map_objects[i].x<FIELD_WIDTH
+				&& map_objects[i].y>=0 && map_objects[i].y<FIELD_HEIGHT)
+				rfield[map_objects[i].y][map_objects[i].x] = map_objects[i].sprite;
 		}
 	}
 	return 0;
@@ -39,11 +41,6 @@ int render_loop() {
 		getmaxyx(stdscr, width, height);
 
 		move(0, 0);
-		/*for (int i = 0; i<height; ++i) {
-			for (int j = 0; i<width; ++j)
-				addch(' ');
-			move(i+1, 0);
-		}*/
 
 		switch (step) {
 			case 0: mvaddch(0,0,'-'); break;
@@ -52,7 +49,6 @@ int render_loop() {
 		}
 
 		for (int i = 0; i<FIELD_HEIGHT; ++i) {
-			//console_drawline(i);
 			for (int j = 0; j<FIELD_WIDTH; ++j) {
 				mvaddch(i+UC, j+LC, rfield[i][j]);
 			}

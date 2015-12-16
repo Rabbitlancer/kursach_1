@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rabbitlancer/code/kursach_1/src/headers/logic.h
+types.h
+/home/rabbitlancer/code/kursach_1/src/headers/types.h
+
+/home/rabbitlancer/code/kursach_1/src/headers/types.h
+
+/home/rabbitlancer/code/kursach_1/src/logic.cpp
+ctime
+-
+cstdlib
+-
+climits
+-
+curses.h
+-
+openssl/rand.h
+-
+headers/logic.h
+/home/rabbitlancer/code/kursach_1/src/headers/logic.h
+

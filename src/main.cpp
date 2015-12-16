@@ -1,12 +1,18 @@
 //kursach_1 - entry point
 //by Rabbitlancer
 #include <iostream>
-
+#include <cstdlib>
+#include <curses.h>
 #include "headers/main.h"
 
 using namespace std;
 
+void finalize() {
+	endwin();
+}
+
 int main(int argc, char *argv[]) {
+	atexit(finalize);
 
 	char choice;
 
@@ -31,6 +37,10 @@ choose:
 	if (choice == 'c') {
 		cout<<"Irrlicht renderers are coming soon!"<<endl<<endl;
 		goto choose;
+	}
+
+	if (init()) {
+		return 1;
 	}
 
 	while (is_complete()) {

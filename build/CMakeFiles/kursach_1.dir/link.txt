@@ -1,0 +1,1 @@
+/usr/bin/c++       CMakeFiles/kursach_1.dir/src/main.cpp.o CMakeFiles/kursach_1.dir/src/logic.cpp.o CMakeFiles/kursach_1.dir/src/render.cpp.o  -o kursach_1 -rdynamic -lssl -lcrypto -lncurses 

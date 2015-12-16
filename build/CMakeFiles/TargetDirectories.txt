@@ -1,0 +1,1 @@
+/home/rabbitlancer/code/kursach_1/build/CMakeFiles/kursach_1.dir
